@@ -311,7 +311,7 @@ namespace Microsoft.Framework.Caching.Memory
 
         /// Remove at least the given percentage (0.10 for 10%) of the total entries (or estimated memory?), according to the following policy:
         /// 1. Remove all expired items.
-        /// 2. Bucket by CachePreservationPriority.
+        /// 2. Bucket by CacheItemPriority.
         /// ?. Least recently used objects.
         /// ?. Items with the soonest absolute expiration.
         /// ?. Items with the soonest sliding expiration.
@@ -339,16 +339,16 @@ namespace Microsoft.Framework.Caching.Memory
                     {
                         switch (entry.Context.Priority)
                         {
-                            case CachePreservationPriority.Low:
+                            case CacheItemPriority.Low:
                                 lowPriEntries.Add(entry);
                                 break;
-                            case CachePreservationPriority.Normal:
+                            case CacheItemPriority.Normal:
                                 normalPriEntries.Add(entry);
                                 break;
-                            case CachePreservationPriority.High:
+                            case CacheItemPriority.High:
                                 highPriEntries.Add(entry);
                                 break;
-                            case CachePreservationPriority.NeverRemove:
+                            case CacheItemPriority.NeverRemove:
                                 neverRemovePriEntries.Add(entry);
                                 break;
                             default:

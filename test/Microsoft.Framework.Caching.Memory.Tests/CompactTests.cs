@@ -41,12 +41,12 @@ namespace Microsoft.Framework.Caching.Memory
             var cache = CreateCache();
             cache.Set("key1", context =>
             {
-                context.SetPriority(CachePreservationPriority.NeverRemove);
+                context.SetPriority(CacheItemPriority.NeverRemove);
                 return "Value1";
             });
             cache.Set("key2", context =>
             {
-                context.SetPriority(CachePreservationPriority.NeverRemove);
+                context.SetPriority(CacheItemPriority.NeverRemove);
                 return "Value2";
             });
             cache.Set("key3", "value3");
@@ -64,12 +64,12 @@ namespace Microsoft.Framework.Caching.Memory
             var cache = CreateCache();
             cache.Set("key1", context =>
             {
-                context.SetPriority(CachePreservationPriority.Low);
+                context.SetPriority(CacheItemPriority.Low);
                 return "Value1";
             });
             cache.Set("key2", context =>
             {
-                context.SetPriority(CachePreservationPriority.Low);
+                context.SetPriority(CacheItemPriority.Low);
                 return "Value2";
             });
             cache.Set("key3", "value3");

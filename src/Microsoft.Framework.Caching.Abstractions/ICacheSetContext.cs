@@ -21,7 +21,7 @@ namespace Microsoft.Framework.Caching.Memory
         /// Sets the priority for keeping this entry in the cache during a memory pressure triggered cleanup.
         /// </summary>
         /// <param name="priority"></param>
-        void SetPriority(CachePreservationPriority priority);
+        void SetPriority(CacheItemPriority priority);
 
         /// <summary>
         /// Sets an absolute expiration date for this entry.

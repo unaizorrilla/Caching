@@ -13,7 +13,7 @@ namespace Microsoft.Framework.Caching.Memory
         internal CacheSetContext(string key)
         {
             Key = key;
-            Priority = CachePreservationPriority.Normal;
+            Priority = CacheItemPriority.Normal;
         }
 
         public string Key { get; private set; }
@@ -30,9 +30,9 @@ namespace Microsoft.Framework.Caching.Memory
 
         internal IList<Tuple<EvictionCallback, object>> PostEvictionCallbacks { get; set; }
 
-        internal CachePreservationPriority Priority { get; private set; }
+        internal CacheItemPriority Priority { get; private set; }
 
-        public void SetPriority(CachePreservationPriority priority)
+        public void SetPriority(CacheItemPriority priority)
         {
             Priority = priority;
         }
