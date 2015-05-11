@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Microsoft.Framework.Caching.Memory.Infrastructure;
@@ -38,7 +39,7 @@ namespace Microsoft.Framework.Caching.Memory
             _entryLock = new ReaderWriterLockSlim();
             _entryExpirationNotification = EntryExpired;
             _clock = options.Clock ?? new SystemClock();
-            if (options.ListenForMemoryPressure)
+            if (options.CompactOnMemoryPressure)
             {
                 GcNotification.Register(DoMemoryPreassureCollection, state: null);
             }
@@ -62,27 +63,25 @@ namespace Microsoft.Framework.Caching.Memory
             get { return _entries.Count; }
         }
 
-        public object Set([NotNull] string key, IEntryLink link, object state, [NotNull] Func<ICacheSetContext, object> create)
+        public object Set([NotNull] string key, object value, IEntryLink link, CacheEntryOptions cacheEntryOptions)
         {
             CheckDisposed();
             CacheEntry priorEntry = null;
             var now = _clock.UtcNow;
-            var context = new CacheSetContext(key) { State = state, CreationTime = now };
-            object value = create(context);
-            var entry = new CacheEntry(context, value, _entryExpirationNotification);
+            var entry = new CacheEntry(key, value, cacheEntryOptions, now, _entryExpirationNotification);
             bool added = false;
 
             if (link != null)
             {
                 // Copy triggers and AbsoluteExpiration to the link.
                 // We do this regardless of it gets cached because the triggers are associated with the value we'll return.
-                if (entry.Context.Triggers != null)
+                if (entry.CacheEntryOptions.Triggers != null)
                 {
-                    link.AddExpirationTriggers(entry.Context.Triggers);
+                    link.AddExpirationTriggers(entry.CacheEntryOptions.Triggers);
                 }
-                if (entry.Context.AbsoluteExpiration.HasValue)
+                if (entry.CacheEntryOptions.AbsoluteExpiration.HasValue)
                 {
-                    link.SetAbsoluteExpiration(entry.Context.AbsoluteExpiration.Value);
+                    link.SetAbsoluteExpiration(entry.CacheEntryOptions.AbsoluteExpiration.Value);
                 }
             }
 
@@ -108,7 +107,7 @@ namespace Microsoft.Framework.Caching.Memory
             }
             if (priorEntry != null)
             {
-                priorEntry.InvokeEvictionCallbacks();
+                priorEntry.InvokeEvictionCallbacks(key);
             }
             if (!added)
             {
@@ -147,13 +146,13 @@ namespace Microsoft.Framework.Caching.Memory
                         if (link != null)
                         {
                             // Copy triggers and AbsoluteExpiration to the link
-                            if (entry.Context.Triggers != null)
+                            if (entry.CacheEntryOptions.Triggers != null)
                             {
-                                link.AddExpirationTriggers(entry.Context.Triggers);
+                                link.AddExpirationTriggers(entry.CacheEntryOptions.Triggers);
                             }
-                            if (entry.Context.AbsoluteExpiration.HasValue)
+                            if (entry.CacheEntryOptions.AbsoluteExpiration.HasValue)
                             {
-                                link.SetAbsoluteExpiration(entry.Context.AbsoluteExpiration.Value);
+                                link.SetAbsoluteExpiration(entry.CacheEntryOptions.AbsoluteExpiration.Value);
                             }
                         }
                     }
@@ -167,7 +166,7 @@ namespace Microsoft.Framework.Caching.Memory
             if (expiredEntry != null)
             {
                 // TODO: For efficiency queue this up for batch removal
-                RemoveEntry(expiredEntry);
+                RemoveEntry(key, expiredEntry);
             }
 
             StartScanForExpiredItems();
@@ -195,23 +194,23 @@ namespace Microsoft.Framework.Caching.Memory
             if (entry != null)
             {
                 // TODO: For efficiency consider processing these removals in batches.
-                RemoveEntry(entry);
+                RemoveEntry(key, entry);
             }
 
             StartScanForExpiredItems();
         }
 
-        private void RemoveEntry(CacheEntry entry)
+        private void RemoveEntry(string key, CacheEntry entry)
         {
             _entryLock.EnterWriteLock();
             try
             {
                 // Only remove it if someone hasn't modified it since our lookup
                 CacheEntry currentEntry;
-                if (_entries.TryGetValue(entry.Context.Key, out currentEntry)
+                if (_entries.TryGetValue(key, out currentEntry)
                     && object.ReferenceEquals(currentEntry, entry))
                 {
-                    _entries.Remove(entry.Context.Key);
+                    _entries.Remove(key);
                 }
             }
             finally
@@ -337,22 +336,22 @@ namespace Microsoft.Framework.Caching.Memory
                     }
                     else
                     {
-                        switch (entry.Context.Priority)
+                        switch (entry.CacheEntryOptions.Priority)
                         {
-                            case CachePreservationPriority.Low:
+                            case CacheItemPriority.Low:
                                 lowPriEntries.Add(entry);
                                 break;
-                            case CachePreservationPriority.Normal:
+                            case CacheItemPriority.Normal:
                                 normalPriEntries.Add(entry);
                                 break;
-                            case CachePreservationPriority.High:
+                            case CacheItemPriority.High:
                                 highPriEntries.Add(entry);
                                 break;
-                            case CachePreservationPriority.NeverRemove:
+                            case CacheItemPriority.NeverRemove:
                                 neverRemovePriEntries.Add(entry);
                                 break;
                             default:
-                                System.Diagnostics.Debug.Assert(false, "Not implemented: " + entry.Context.Priority);
+                                Debug.Assert(false, "Not implemented: " + entry.CacheEntryOptions.Priority);
                                 break;
                         }
                     }

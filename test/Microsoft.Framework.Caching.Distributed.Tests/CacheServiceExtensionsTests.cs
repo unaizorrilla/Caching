@@ -80,7 +80,7 @@ namespace Microsoft.Framework.Caching.Distributed
                 throw new NotImplementedException();
             }
 
-            public object Set(string key, IEntryLink link, object state, Func<ICacheSetContext, object> create)
+            public object Set(string key, object value, IEntryLink link, CacheEntryOptions cacheEntryOptions)
             {
                 throw new NotImplementedException();
             }

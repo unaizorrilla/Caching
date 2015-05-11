@@ -17,7 +17,7 @@ namespace Microsoft.Framework.Caching.Memory
             return new MemoryCache(new MemoryCacheOptions()
             {
                 Clock = clock,
-                ListenForMemoryPressure = false,
+                CompactOnMemoryPressure = false,
             });
         }
 

@@ -43,7 +43,7 @@ namespace MemoryCacheSample
             // Stays in the cache as long as possible
             result = cache.GetOrSet(key, state, context =>
             {
-                context.SetPriority(CachePreservationPriority.NeverRemove);
+                context.SetPriority(CacheItemPriority.NeverRemove);
                 return new object();
             });
 

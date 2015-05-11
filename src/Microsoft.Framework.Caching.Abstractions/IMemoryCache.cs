@@ -13,10 +13,9 @@ namespace Microsoft.Framework.Caching.Memory
         /// <param name="key">A string identifying the entry. This is case sensitive.</param>
         /// <param name="link">An entry link used to collect trigger and expiration information from this entry
         /// for use in a parent entry.</param>
-        /// <param name="state">Application state that will be passed to the creation factory.</param>
-        /// <param name="create">A factory that will create and configure the entry.</param>
-        /// <returns>The object that was created.</returns>
-        object Set(string key, IEntryLink link, object state, Func<ICacheSetContext, object> create);
+        /// <param name="value"></param>
+        /// <param name="cacheEntryOptions"></returns>
+        object Set(string key, object value, IEntryLink link, CacheEntryOptions cacheEntryOptions);
 
         /// <summary>
         /// Gets the item associated with this key if present.

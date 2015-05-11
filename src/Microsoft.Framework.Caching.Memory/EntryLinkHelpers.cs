@@ -11,7 +11,7 @@ using System.Runtime.Remoting.Messaging;
 
 namespace Microsoft.Framework.Caching.Memory
 {
-    public static class EntryLinkHelpers
+    internal static class EntryLinkHelpers
     {
 #if DNXCORE50
         private static readonly AsyncLocal<IEntryLink> _contextLink = new AsyncLocal<IEntryLink>();

@@ -20,7 +20,7 @@ namespace Microsoft.Framework.Caching.Memory.Tests
             return new MemoryCache(new MemoryCacheOptions()
             {
                 Clock = clock,
-                ListenForMemoryPressure = false,
+                CompactOnMemoryPressure = false,
             });
         }
 

@@ -12,7 +12,7 @@ namespace Microsoft.Framework.Caching.Memory
         {
             return new MemoryCache(new MemoryCacheOptions()
             {
-                ListenForMemoryPressure = false,
+                CompactOnMemoryPressure = false,
             });
         }
 

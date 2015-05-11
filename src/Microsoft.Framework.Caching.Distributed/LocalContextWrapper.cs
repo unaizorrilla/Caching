@@ -9,10 +9,10 @@ namespace Microsoft.Framework.Caching.Distributed
 {
     internal class LocalContextWrapper : ICacheContext
     {
-        private readonly ICacheSetContext _context;
+        private readonly CacheEntryOptions _context;
         private readonly MemoryStream _data = new MemoryStream();
 
-        internal LocalContextWrapper(ICacheSetContext context)
+        internal LocalContextWrapper(CacheEntryOptions context)
         {
             _context = context;
         }
