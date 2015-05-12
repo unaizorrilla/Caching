@@ -11,8 +11,8 @@ namespace Microsoft.Framework.Caching
     {
         public CacheEntryOptions()
         {
-            Triggers = new List<IExpirationTrigger>();
-            PostEvictionCallbacks = new List<PostEvictionCallbackRegistration>();
+            Triggers = new List<IExpirationTrigger>(1);
+            PostEvictionCallbacks = new List<PostEvictionCallbackRegistration>(1);
         }
 
         /// <summary>

@@ -7,43 +7,6 @@ namespace Microsoft.Framework.Caching.Memory
 {
     public static class CacheExtensions
     {
-        public static object Set(this IMemoryCache cache, string key, object obj)
-        {
-            return cache.Set(key, EntryLinkHelpers.ContextLink, state: obj, create: context => context.State);
-        }
-
-        public static TItem Set<TItem>(this IMemoryCache cache, string key, TItem obj)
-        {
-            return (TItem)cache.Set(key, (object)obj);
-        }
-
-        public static object Set(this IMemoryCache cache, string key, Func<ICacheSetContext, object> create)
-        {
-            return cache.Set(key, EntryLinkHelpers.ContextLink, create);
-        }
-
-        public static object Set(this IMemoryCache cache, string key, object state, Func<ICacheSetContext, object> create)
-        {
-            return cache.Set(key, EntryLinkHelpers.ContextLink, state, create);
-        }
-
-        public static TItem Set<TItem>(this IMemoryCache cache, string key, Func<ICacheSetContext, TItem> create)
-        {
-            return (TItem)cache.Set(key, create, context =>
-            {
-                var myCreate = (Func<ICacheSetContext, TItem>)context.State;
-                return (object)myCreate(context);
-            });
-        }
-
-        public static TItem Set<TItem>(this IMemoryCache cache, string key, object state, Func<ICacheSetContext, TItem> create)
-        {
-            return (TItem)cache.Set(key, state, context =>
-            {
-                return (object)create(context);
-            });
-        }
-
         public static object Get(this IMemoryCache cache, string key)
         {
             object value = null;
@@ -53,7 +16,7 @@ namespace Microsoft.Framework.Caching.Memory
 
         public static TItem Get<TItem>(this IMemoryCache cache, string key)
         {
-            TItem value = default(TItem);
+            TItem value;
             cache.TryGetValue<TItem>(key, out value);
             return value;
         }
@@ -70,54 +33,24 @@ namespace Microsoft.Framework.Caching.Memory
             return false;
         }
 
-        public static object GetOrSet(this IMemoryCache cache, string key, object value)
+        public static object Set(this IMemoryCache cache, string key, object value)
         {
-            object obj;
-            if (cache.TryGetValue(key, out obj))
-            {
-                return obj;
-            }
-            return cache.Set(key, value);
+            return cache.Set(key, value, new CacheEntryOptions());
         }
 
-        public static object GetOrSet(this IMemoryCache cache, string key, Func<ICacheSetContext, object> create)
+        public static object Set(this IMemoryCache cache, string key, object value, CacheEntryOptions options)
         {
-            object obj;
-            if (cache.TryGetValue(key, out obj))
-            {
-                return obj;
-            }
-            return cache.Set(key, state: null, create: create);
+            return cache.Set(key, value, EntryLinkHelpers.ContextLink, options);
         }
 
-        public static object GetOrSet(this IMemoryCache cache, string key, object state, Func<ICacheSetContext, object> create)
+        public static TItem Set<TItem>(this IMemoryCache cache, string key, TItem value)
         {
-            object obj;
-            if (cache.TryGetValue(key, out obj))
-            {
-                return obj;
-            }
-            return cache.Set(key, state, create);
+            return (TItem)cache.Set(key, (object)value, new CacheEntryOptions());
         }
 
-        public static TItem GetOrSet<TItem>(this IMemoryCache cache, string key, Func<ICacheSetContext, TItem> create)
+        public static TItem Set<TItem>(this IMemoryCache cache, string key, TItem value, CacheEntryOptions options)
         {
-            TItem obj;
-            if (cache.TryGetValue(key, out obj))
-            {
-                return obj;
-            }
-            return cache.Set(key, create);
-        }
-
-        public static TItem GetOrSet<TItem>(this IMemoryCache cache, string key, object state, Func<ICacheSetContext, TItem> create)
-        {
-            TItem obj;
-            if (cache.TryGetValue(key, out obj))
-            {
-                return obj;
-            }
-            return cache.Set(key, state, create);
+            return (TItem)cache.Set(key, (object)value, options);
         }
 
         /// <summary>

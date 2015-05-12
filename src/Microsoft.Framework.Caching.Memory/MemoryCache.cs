@@ -62,27 +62,25 @@ namespace Microsoft.Framework.Caching.Memory
             get { return _entries.Count; }
         }
 
-        public object Set([NotNull] string key, IEntryLink link, object state, [NotNull] Func<ICacheSetContext, object> create)
+        public object Set([NotNull] string key, object value, IEntryLink link, CacheEntryOptions options)
         {
             CheckDisposed();
             CacheEntry priorEntry = null;
-            var now = _clock.UtcNow;
-            var context = new CacheSetContext(key) { State = state, CreationTime = now };
-            object value = create(context);
-            var entry = new CacheEntry(context, value, _entryExpirationNotification);
+            var creationTime = _clock.UtcNow;
+            var entry = new CacheEntry(key, value, creationTime, options, _entryExpirationNotification);
             bool added = false;
 
             if (link != null)
             {
                 // Copy triggers and AbsoluteExpiration to the link.
                 // We do this regardless of it gets cached because the triggers are associated with the value we'll return.
-                if (entry.Context.Triggers != null)
+                if (entry.Options.Triggers != null)
                 {
-                    link.AddExpirationTriggers(entry.Context.Triggers);
+                    link.AddExpirationTriggers(entry.Options.Triggers);
                 }
-                if (entry.Context.AbsoluteExpiration.HasValue)
+                if (entry.Options.AbsoluteExpiration.HasValue)
                 {
-                    link.SetAbsoluteExpiration(entry.Context.AbsoluteExpiration.Value);
+                    link.SetAbsoluteExpiration(entry.Options.AbsoluteExpiration.Value);
                 }
             }
 
@@ -95,7 +93,7 @@ namespace Microsoft.Framework.Caching.Memory
                     priorEntry.SetExpired(EvictionReason.Replaced);
                 }
 
-                if (!entry.CheckExpired(now))
+                if (!entry.CheckExpired(creationTime))
                 {
                     _entries[key] = entry;
                     entry.AttachTriggers();
@@ -147,13 +145,13 @@ namespace Microsoft.Framework.Caching.Memory
                         if (link != null)
                         {
                             // Copy triggers and AbsoluteExpiration to the link
-                            if (entry.Context.Triggers != null)
+                            if (entry.Options.Triggers != null)
                             {
-                                link.AddExpirationTriggers(entry.Context.Triggers);
+                                link.AddExpirationTriggers(entry.Options.Triggers);
                             }
-                            if (entry.Context.AbsoluteExpiration.HasValue)
+                            if (entry.Options.AbsoluteExpiration.HasValue)
                             {
-                                link.SetAbsoluteExpiration(entry.Context.AbsoluteExpiration.Value);
+                                link.SetAbsoluteExpiration(entry.Options.AbsoluteExpiration.Value);
                             }
                         }
                     }
@@ -201,6 +199,19 @@ namespace Microsoft.Framework.Caching.Memory
             StartScanForExpiredItems();
         }
 
+        private void ValidateCacheEntryOptions(CacheEntryOptions options, ISystemClock systemClock)
+        {
+            if (options.AbsoluteExpiration != null && options.AbsoluteExpiration.Value <= systemClock.UtcNow)
+            {
+                throw new InvalidOperationException("The absolute expiration value must be in the future.");
+            }
+
+            if (options.SlidingExpiration != null && options.SlidingExpiration <= TimeSpan.Zero)
+            {
+                throw new InvalidOperationException("The sliding expiration value must be positive.");
+            }
+        }
+
         private void RemoveEntry(CacheEntry entry)
         {
             _entryLock.EnterWriteLock();
@@ -208,10 +219,10 @@ namespace Microsoft.Framework.Caching.Memory
             {
                 // Only remove it if someone hasn't modified it since our lookup
                 CacheEntry currentEntry;
-                if (_entries.TryGetValue(entry.Context.Key, out currentEntry)
+                if (_entries.TryGetValue(entry.Key, out currentEntry)
                     && object.ReferenceEquals(currentEntry, entry))
                 {
-                    _entries.Remove(entry.Context.Key);
+                    _entries.Remove(entry.Key);
                 }
             }
             finally
@@ -230,10 +241,10 @@ namespace Microsoft.Framework.Caching.Memory
                 {
                     // Only remove it if someone hasn't modified it since our lookup
                     CacheEntry currentEntry;
-                    if (_entries.TryGetValue(entry.Context.Key, out currentEntry)
+                    if (_entries.TryGetValue(entry.Key, out currentEntry)
                         && object.ReferenceEquals(currentEntry, entry))
                     {
-                        _entries.Remove(entry.Context.Key);
+                        _entries.Remove(entry.Key);
                     }
                 }
             }
@@ -337,7 +348,7 @@ namespace Microsoft.Framework.Caching.Memory
                     }
                     else
                     {
-                        switch (entry.Context.Priority)
+                        switch (entry.Options.Priority)
                         {
                             case CacheItemPriority.Low:
                                 lowPriEntries.Add(entry);
@@ -352,7 +363,7 @@ namespace Microsoft.Framework.Caching.Memory
                                 neverRemovePriEntries.Add(entry);
                                 break;
                             default:
-                                System.Diagnostics.Debug.Assert(false, "Not implemented: " + entry.Context.Priority);
+                                System.Diagnostics.Debug.Assert(false, "Not implemented: " + entry.Options.Priority);
                                 break;
                         }
                     }

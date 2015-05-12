@@ -10,7 +10,7 @@ namespace Microsoft.Framework.Caching.Distributed
     {
         void Connect();
 
-        Stream Set(string key, object state, Action<ICacheContext> create);
+        Stream Set(string key, object state, CacheEntryOptions options);
 
         bool TryGetValue(string key, out Stream value);
 

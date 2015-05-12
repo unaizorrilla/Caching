@@ -32,11 +32,8 @@ namespace Microsoft.Framework.Caching.Memory
             var expected = clock.UtcNow - TimeSpan.FromMinutes(1);
             ExceptionAssert.ThrowsArgumentOutOfRange(() =>
             {
-                var result = cache.Set(key, context =>
-                {
-                    context.SetAbsoluteExpiration(expected);
-                    return obj;
-                });
+                var result = cache.Set(key, obj, new CacheEntryOptions() { AbsoluteExpiration = expected });
+
             }, "absolute", "The absolute expiration value must be in the future.", expected.ToString(CultureInfo.CurrentCulture));
         }
 
@@ -46,18 +43,17 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
-            var result = cache.Set(key, context =>
+            var result = cache.Set(key, value, new CacheEntryOptions()
             {
-                context.SetAbsoluteExpiration(clock.UtcNow + TimeSpan.FromMinutes(1));
-                return obj;
+                AbsoluteExpiration = clock.UtcNow + TimeSpan.FromMinutes(1)
             });
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             var found = cache.TryGetValue(key, out result);
             Assert.True(found);
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             clock.Add(TimeSpan.FromMinutes(2));
 
@@ -72,25 +68,27 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
             var callbackInvoked = new ManualResetEvent(false);
 
-            var result = cache.Set(key, context =>
+            var options = new CacheEntryOptions();
+            options.AbsoluteExpiration = clock.UtcNow + TimeSpan.FromMinutes(1);
+            options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {
-                context.SetAbsoluteExpiration(clock.UtcNow + TimeSpan.FromMinutes(1));
-                context.RegisterPostEvictionCallback((subkey, value, reason, state) =>
+                State = callbackInvoked,
+                EvictionCallback = (subkey, subValue, reason, state) =>
                 {
                     // TODO: Verify params
                     var localCallbackInvoked = (ManualResetEvent)state;
                     localCallbackInvoked.Set();
-                }, state: callbackInvoked);
-                return obj;
+                }
             });
-            Assert.Same(obj, result);
+            var result = cache.Set(key, value, options);
+            Assert.Same(value, result);
 
             var found = cache.TryGetValue(key, out result);
             Assert.True(found);
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             clock.Add(TimeSpan.FromMinutes(2));
             var ignored = cache.Get("otherKey"); // Background expiration checks are triggered by misc cache activity.
@@ -108,14 +106,13 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
             ExceptionAssert.ThrowsArgumentOutOfRange(() =>
             {
-                var result = cache.Set(key, context =>
+                var result = cache.Set(key, value, new CacheEntryOptions()
                 {
-                    context.SetAbsoluteExpiration(TimeSpan.FromMinutes(-1));
-                    return obj;
+                    AbsoluteExpiration = clock.UtcNow + TimeSpan.FromMinutes(-1)
                 });
             }, "relative", "The relative expiration value must be positive.", TimeSpan.FromMinutes(-1));
         }
@@ -126,14 +123,13 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
             ExceptionAssert.ThrowsArgumentOutOfRange(() =>
             {
-                var result = cache.Set(key, context =>
+                var result = cache.Set(key, value, new CacheEntryOptions()
                 {
-                    context.SetAbsoluteExpiration(TimeSpan.Zero);
-                    return obj;
+                    AbsoluteExpiration = clock.UtcNow + TimeSpan.Zero
                 });
             }, "relative", "The relative expiration value must be positive.", TimeSpan.Zero);
         }
@@ -144,18 +140,17 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
-            var result = cache.Set(key, context =>
+            var result = cache.Set(key, value, new CacheEntryOptions()
             {
-                context.SetAbsoluteExpiration(TimeSpan.FromMinutes(1));
-                return obj;
+                AbsoluteExpiration = clock.UtcNow + TimeSpan.FromMinutes(1)
             });
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             var found = cache.TryGetValue(key, out result);
             Assert.True(found);
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             clock.Add(TimeSpan.FromMinutes(2));
 
@@ -170,14 +165,13 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
             ExceptionAssert.ThrowsArgumentOutOfRange(() =>
             {
-                var result = cache.Set(key, context =>
+                var result = cache.Set(key, value, new CacheEntryOptions()
                 {
-                    context.SetSlidingExpiration(TimeSpan.FromMinutes(-1));
-                    return obj;
+                    SlidingExpiration = TimeSpan.FromMinutes(-1)
                 });
             }, "offset", "The sliding expiration value must be positive.", TimeSpan.FromMinutes(-1));
         }
@@ -188,14 +182,13 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
             ExceptionAssert.ThrowsArgumentOutOfRange(() =>
             {
-                var result = cache.Set(key, context =>
+                var result = cache.Set(key, value, new CacheEntryOptions()
                 {
-                    context.SetSlidingExpiration(TimeSpan.Zero);
-                    return obj;
+                    SlidingExpiration = TimeSpan.Zero
                 });
             }, "offset", "The sliding expiration value must be positive.", TimeSpan.Zero);
         }
@@ -206,18 +199,17 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
-            var result = cache.Set(key, context =>
+            var result = cache.Set(key, value, new CacheEntryOptions()
             {
-                context.SetSlidingExpiration(TimeSpan.FromMinutes(1));
-                return obj;
+                SlidingExpiration = TimeSpan.FromMinutes(1)
             });
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             var found = cache.TryGetValue(key, out result);
             Assert.True(found);
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             clock.Add(TimeSpan.FromMinutes(2));
 
@@ -232,18 +224,17 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
-            var result = cache.Set(key, context =>
+            var result = cache.Set(key, value, new CacheEntryOptions()
             {
-                context.SetSlidingExpiration(TimeSpan.FromMinutes(1));
-                return obj;
+                SlidingExpiration = TimeSpan.FromMinutes(1)
             });
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             var found = cache.TryGetValue(key, out result);
             Assert.True(found);
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             for (int i = 0; i < 10; i++)
             {
@@ -251,7 +242,7 @@ namespace Microsoft.Framework.Caching.Memory
 
                 found = cache.TryGetValue(key, out result);
                 Assert.True(found);
-                Assert.Same(obj, result);
+                Assert.Same(value, result);
             }
         }
 
@@ -261,19 +252,18 @@ namespace Microsoft.Framework.Caching.Memory
             var clock = new TestClock();
             var cache = CreateCache(clock);
             var key = "myKey";
-            var obj = new object();
+            var value = new object();
 
-            var result = cache.Set(key, context =>
+            var result = cache.Set(key, value, new CacheEntryOptions()
             {
-                context.SetSlidingExpiration(TimeSpan.FromMinutes(1));
-                context.SetAbsoluteExpiration(TimeSpan.FromMinutes(2));
-                return obj;
+                SlidingExpiration = TimeSpan.FromMinutes(1),
+                AbsoluteExpiration = clock.UtcNow + TimeSpan.FromMinutes(2)
             });
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             var found = cache.TryGetValue(key, out result);
             Assert.True(found);
-            Assert.Same(obj, result);
+            Assert.Same(value, result);
 
             for (int i = 0; i < 7; i++)
             {
@@ -281,7 +271,7 @@ namespace Microsoft.Framework.Caching.Memory
 
                 found = cache.TryGetValue(key, out result);
                 Assert.True(found);
-                Assert.Same(obj, result);
+                Assert.Same(value, result);
             }
 
             clock.Add(TimeSpan.FromSeconds(15));
